@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', type=str, help = "Dataset utilizado para treino")
+
+args = parser.parse_args()
+
+dataset = args.dataset
 
 import sys
 
@@ -38,20 +46,9 @@ from ssl_tools.transforms import *
 from typing import Any
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
-from tfc_2_pretrain import dataPercentage 
-import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', type=str, help = "Dataset utilizado para treino")
-
-args = parser.parse_args()
-
-dataset = args.dataset
-
-print(dataset)
 
 # Run parameters
-num_epochs = 200
+num_epochs = 1000
 accelerator = "gpu"
 num_gpus = 1
 strategy = "ddp"
@@ -75,7 +72,7 @@ learning_rate = 3e-4
 temperature = 0.2
 use_cosine_similarity = True
 is_subset = False
-n_classes = 6
+n_classes = 7
 
 class TFCContrastiveDataset(Dataset):
     def __init__(
@@ -549,8 +546,8 @@ def get_data():
     )
     return train_loader, validation_loader, test_loader
 
-
 def main():
+
     tfc_classifier = build_model()
     train_loader, validation_loader, test_loader = get_data()
 

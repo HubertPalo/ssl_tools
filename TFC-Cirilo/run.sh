@@ -39,6 +39,8 @@ fi
 
 ###### RUN TFC ######
 
-for dataset in UCI KuHar MotionSense RealWorld_thigh RealWorld_waist WISDM; do
-    ./single_run.sh --gpu ${gpu} --dataset ${dataset};
+for clsf in KNN; do
+    for dataset in UCI KuHar MotionSense RealWorld_thigh RealWorld_waist WISDM; do
+        ./single_run.sh --gpu ${gpu} --dataset ${dataset};
+    done
 done
