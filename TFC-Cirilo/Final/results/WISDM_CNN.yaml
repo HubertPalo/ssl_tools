@@ -1,0 +1,3 @@
+- Train dataset: WISDM
+  test_acc: 0.7456250190734863
+  test_loss: 1.0377956628799438

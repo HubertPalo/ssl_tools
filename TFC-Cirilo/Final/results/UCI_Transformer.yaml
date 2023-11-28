@@ -1,0 +1,3 @@
+- Train dataset: UCI
+  test_acc: 0.901562511920929
+  test_loss: 0.3939878046512604

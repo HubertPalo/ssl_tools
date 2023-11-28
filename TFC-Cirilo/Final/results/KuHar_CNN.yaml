@@ -1,0 +1,3 @@
+- Train dataset: KuHar
+  test_acc: 0.8046875
+  test_loss: 0.46452203392982483

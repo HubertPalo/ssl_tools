@@ -1,0 +1,3 @@
+- Train dataset: RealWorld_waist
+  test_acc: 0.7578125
+  test_loss: 1.9578529596328735
