@@ -170,7 +170,7 @@ class NTXentLoss_poly(pl.LightningModule):
 
     def forward(self, zis, zjs):
         representations = torch.cat([zjs, zis], dim=0)
-
+        print("representation", representations)
         similarity_matrix = self.similarity_function(representations, representations)
 
         # filter out the scores from the positive samples
