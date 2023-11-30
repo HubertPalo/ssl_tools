@@ -88,8 +88,11 @@ class CNN_Enconder(Architecture):
             self.nxtent
         )
 
-    def treat_data(self, X):
-        # Xf = torch.reshape(X, (X.size(dim=0), 60, 6))
+    def get_data_time(self, X):
+        X = torch.reshape(X, (X.size(dim=0), 6, 60))
+        return X
+
+    def get_data_freq(self, X):
         X = torch.reshape(X, (X.size(dim=0), 6, 60))
         return X
 

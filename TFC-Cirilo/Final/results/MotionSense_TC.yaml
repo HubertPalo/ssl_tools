@@ -1,0 +1,3 @@
+- Train dataset: MotionSense
+  test_acc: 0.8779296875
+  test_loss: 0.8653598427772522

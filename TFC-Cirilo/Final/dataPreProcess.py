@@ -8,8 +8,8 @@ sys.path.append('../')
 from TFC_Final.ssl_tools.transforms import *
 from pathlib import Path
 
-from Final.config import Config
-from Final.TFCdataSet import TFCContrastiveDataset
+from config import Config
+from TFCdataSet import TFCContrastiveDataset
 
 cfg = Config()
 
@@ -29,8 +29,6 @@ class DataPre():
         y = dataset["standard activity code"]
         y = torch.tensor(y.values)
 
-        X = self.architecture.treat_data(X)
-
         time_transforms = [
             AddGaussianNoise(std=cfg.jitter_ratio)
         ]
@@ -40,6 +38,7 @@ class DataPre():
         ]
 
         train_dataset = TFCContrastiveDataset(
+            arquitecture=self.architecture,
             data=X,
             labels=y,
             time_transforms=time_transforms,

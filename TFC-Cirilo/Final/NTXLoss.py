@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import sys
 sys.path.append('../')
 
-from TFC_Final.ssl_tools.transforms import *
+from ssl_tools.transforms import *
 
 class NTXentLoss_poly(pl.LightningModule):
     def __init__(

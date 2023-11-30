@@ -1,0 +1,3 @@
+- Train dataset: RealWorld_thigh
+  test_acc: 0.56640625
+  test_loss: 3.3841910362243652

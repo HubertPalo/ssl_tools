@@ -53,7 +53,7 @@ class Transformer_Enconder(Architecture):
             self.nxtent
         )
 
-    def treat_data(self, X):
+    def get_data_time(self, X):
         Xf = torch.reshape(X, (X.size(dim=0), 60, 6))
         X = torch.reshape(X, (X.size(dim=0), 6, 60))
 
@@ -61,6 +61,18 @@ class Transformer_Enconder(Architecture):
             x = torch.stack((x[0],x[1],x[2],x[3],x[4],x[5]), dim = 1)
             Xf[i] = x
         
+        Xf = Xf.permute(0, 2, 1)
+        return Xf
+
+    def get_data_freq(self, X):
+        Xf = torch.reshape(X, (X.size(dim=0), 60, 6))
+        X = torch.reshape(X, (X.size(dim=0), 6, 60))
+
+        for i, x in enumerate(X):
+            x = torch.stack((x[0],x[1],x[2],x[3],x[4],x[5]), dim = 1)
+            Xf[i] = x
+        
+        Xf = Xf.permute(0, 2, 1)
         return Xf
 
         

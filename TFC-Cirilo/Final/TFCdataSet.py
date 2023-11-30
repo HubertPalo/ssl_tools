@@ -6,11 +6,12 @@ from typing import List
 import sys
 sys.path.append('../')
 
-from TFC_Final.ssl_tools.transforms import *
+from ssl_tools.transforms import *
 
 class TFCContrastiveDataset(Dataset):
     def __init__(
         self,
+        arquitecture,
         data: torch.Tensor,
         labels: torch.Tensor = None,
         length_alignment: int = 360,
@@ -20,28 +21,39 @@ class TFCContrastiveDataset(Dataset):
         assert len(data) == len(labels), "Data and labels must have the same length"
         
         self.data_time = data
+        self.data_freq = data
         self.labels = labels
         self.length_alignment = length_alignment
         self.time_transforms = time_transforms or []
         self.frequency_transforms = frequency_transforms or []
+        self.arquitecture = arquitecture
         
+
+        self.data_time = arquitecture.get_data_time(self.data_time)
+        self.data_freq = arquitecture.get_data_freq(self.data_freq)
+
         if not isinstance(self.time_transforms, list):
             self.time_transforms = [self.time_transforms]
         if not isinstance(self.frequency_transforms, list):
             self.frequency_transforms = [self.frequency_transforms]
 
-        if len(self.data_time.shape) < 3:
-            self.data_time = self.data_time.unsqueeze(2)
+        # if len(self.data_time.shape) < 3:
+        #     self.data_time = self.data_time.unsqueeze(2)
+        #     self.data_freq = self.data_freq.unsqueeze(2)
 
-        if self.data_time.shape.index(min(self.data_time.shape)) != 1:
-            self.data_time = self.data_time.permute(0, 2, 1)
+        # if self.data_time.shape.index(min(self.data_time.shape)) != 1:
+        #     self.data_time = self.data_time.permute(0, 2, 1)
+        #     self.data_freq = self.data_freq.permute(0, 2, 1)
 
         """Align the data to the same length, removing the extra features"""
         # self.data_time = self.data_time[:, :1, : self.length_alignment]
         
         """Calculcate the FFT of the data and apply the transforms (if any)"""
-        self.data_freq = torch.fft.fft(self.data_time).abs()
+        self.data_freq = torch.fft.fft(self.data_freq).abs()
         
+        # print("AAAAAAAAAAA ", self.data_time.size(), self.data_freq.size())
+        # exit()
+
         # This could be done in the __getitem__ method
         # For now, we do it here to be more similar to the original implementation
         self.data_time_augmented = self.apply_transforms(self.data_time, self.time_transforms)

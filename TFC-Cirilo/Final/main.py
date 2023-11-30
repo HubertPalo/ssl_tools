@@ -7,6 +7,7 @@ from pathlib import Path
 from config import Config
 from architectures.Transformer import *
 from architectures.CNN1D import *
+from architectures.Transformer_CNN import *
 from dataPreProcess import DataPre
 from TFCmodel import TFC
 from classifiers.MLP import Mlp
@@ -23,13 +24,13 @@ mode = args.mode
 cfg = Config()
 
 def preTrain_mode():
-    architecture = CNN_Enconder()
+    architecture = Transformer_CNN_Enconder()
     tfc_model = TFC(architecture)
     dataPre = DataPre(dataset, architecture)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=cfg.tfc_pretrain_checkpoint,
-        filename= "PreTrainCNN:" + dataset,
+        filename= "PreTrainTC:" + dataset,
         monitor="val_loss",
         save_last=False,
         mode="min",
@@ -49,10 +50,10 @@ def preTrain_mode():
     trainer.fit(tfc_model, train_loader, validation_loader)
 
 def classifier_mode():
-    model = TFC(CNN_Enconder())
+    model = TFC(Transformer_CNN_Enconder())
     # model.load_from_checkpoint("save_models/PreTrainFinal:" + str(dataset) + ".ckpt")
     # model = torch.load("save_models/PreTrainFinal:" + str(dataset) + ".ckpt")
-    model.load_state_dict(torch.load("save_models/PreTrainCNN:" + str(dataset) + ".ckpt")["state_dict"])
+    model.load_state_dict(torch.load("save_models/PreTrainTC:" + str(dataset) + ".ckpt")["state_dict"])
     print(model.architecture)
     classifier = Mlp(7, model)
     dataPre = DataPre(dataset, model.architecture)
@@ -89,7 +90,7 @@ def classifier_mode():
 
     res[0]['Train dataset'] = dataset
 
-    results_path = Path("results/" + dataset + "_CNN.yaml")
+    results_path = Path("results/" + dataset + "_TC.yaml")
     print(results_path) 
 
     import yaml
