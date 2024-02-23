@@ -76,3 +76,20 @@ class TNCPredictionHead(ProjectionHead):
 
 class CPCPredictionHead(TNCPredictionHead):
     pass
+
+class LinearPredictionHead(ProjectionHead):
+    def __init__(
+        self,
+        input_dim: int = 10,
+        output_dim: int = 6,
+    ):
+        super().__init__(
+            [
+                (
+                    input_dim,
+                    output_dim,
+                    None,
+                    torch.nn.Softmax(dim=1),
+                ),
+            ]
+        )
