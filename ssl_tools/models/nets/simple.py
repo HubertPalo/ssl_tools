@@ -6,19 +6,22 @@ import lightning as L
 class SimpleClassificationNet(L.LightningModule):
     def __init__(
         self,
-        backbone: torch.nn.Module,
-        fc: torch.nn.Module,
+        head: torch.nn.Module,
+        backbone: torch.nn.Module = torch.nn.Identity(),
         learning_rate: float = 1e-3,
+        update_backbone: bool = True,
         flatten: bool = True,
         loss_fn: torch.nn.Module = None,
         train_metrics: Dict[str, torch.Tensor] = None,
         val_metrics: Dict[str, torch.Tensor] = None,
         test_metrics: Dict[str, torch.Tensor] = None,
+        optimizer_cls: torch.optim.Optimizer = None,
     ):
         super().__init__()
         self.backbone = backbone
-        self.fc = fc
+        self.head = head
         self.learning_rate = learning_rate
+        self.update_backbone = update_backbone
         self.flatten = flatten
         self.loss_fn = loss_fn or torch.nn.CrossEntropyLoss()
         self.metrics = {
@@ -26,6 +29,7 @@ class SimpleClassificationNet(L.LightningModule):
             "val": val_metrics or {},
             "test": test_metrics or {},
         }
+        self.optimizer_cls = optimizer_cls or torch.optim.Adam
 
     def loss_func(self, y_hat, y):
         loss = self.loss_fn(y_hat, y)
@@ -35,7 +39,7 @@ class SimpleClassificationNet(L.LightningModule):
         x = self.backbone(x)
         if self.flatten:
             x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        x = self.head(x)
         return x
 
     def compute_metrics(self, y_hat, y, step_name):
@@ -79,12 +83,18 @@ class SimpleClassificationNet(L.LightningModule):
         y_hat = self.forward(x)
         return y_hat
 
+    def _freeze(self, model):
+        for param in model.parameters():
+            param.requires_grad = False
+
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.parameters(),
-            lr=self.learning_rate,
-        )
-        return optimizer
+        if self.update_backbone:
+            return self.optimizer_cls(self.parameters(), lr=self.learning_rate)
+        else:
+            self._freeze(self.backbone)
+            return self.optimizer_cls(
+                self.head.parameters(), lr=self.learning_rate
+            )
 
 
 class SimpleReconstructionNet(L.LightningModule):

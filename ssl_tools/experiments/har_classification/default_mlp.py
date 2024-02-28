@@ -10,7 +10,7 @@ from ssl_tools.data.data_modules import (
 )
 from torchmetrics import Accuracy
 from ssl_tools.models.ssl.classifier import SSLDiscriminator
-from ssl_tools.models.ssl.modules.heads import TNCPredictionHead
+from ssl_tools.models.ssl.modules.heads import DefaultMLP
 from ssl_tools.models.ssl.tnc import build_tnc
 from ssl_tools.experiments.har_classification._classification_base import EvaluatorBase, PredictionHeadClassifier
 
@@ -107,7 +107,7 @@ class TNCTrain(LightningSSLTrain):
         if load_backbone:
             self.load_checkpoint(model, load_backbone)
 
-        classifier = TNCPredictionHead(
+        classifier = DefaultMLP(
             input_dim=self.encoding_size,
             output_dim=self.num_classes,
         )
@@ -173,9 +173,11 @@ class TNCTest(EvaluatorBase):
             mc_sample_size=self.mc_sample_size,
             w=self.w,
         )
-        classifier = TNCPredictionHead(
-            input_dim=self.encoding_size,
-            output_dim=self.num_classes,
+        classifier = DefaultMLP(
+            input_dim = 10,
+            hidden_dim1 = 100,
+            output_dim = 6,
+            dropout_prob = 0,
         )
         
         task = "multiclass" if self.num_classes > 2 else "binary"

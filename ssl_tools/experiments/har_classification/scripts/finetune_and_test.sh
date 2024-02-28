@@ -212,7 +212,7 @@ cd "$CWD" || exit 1
 TRAIN_OUTPUT_DIR="$LOG_DIR/finetune/$NAME/$RUN_ID/"
 
 # Run the training script
-#write_and_run_fit "$SCRIPT" "$TRAIN_OUTPUT_DIR"
+write_and_run_fit "$SCRIPT" "$TRAIN_OUTPUT_DIR"
 echo "-------------------------------------------------------------------------"
 
 return_code=$?

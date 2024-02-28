@@ -48,11 +48,11 @@ def generate_embeddings(
     dataloader: DataLoader,
     trainer: L.Trainer,
 ):
-    old_fc = model.fc
-    model.fc = torch.nn.Identity()
+    old_head = model.head
+    model.head = torch.nn.Identity()
     embeddings = trainer.predict(model, dataloader)
     embeddings = torch.cat(embeddings)
-    model.fc = old_fc
+    model.head = old_head
     return embeddings
 
 

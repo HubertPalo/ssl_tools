@@ -93,3 +93,30 @@ class LinearPredictionHead(ProjectionHead):
                 ),
             ]
         )
+
+class DefaultMLP(ProjectionHead):
+    def __init__(
+        self,
+        input_dim: int = 10,
+        hidden_dim1: int = 100,
+        output_dim: int = 6,
+        dropout_prob: float = 0,
+    ):
+        super().__init__(
+            [
+                (
+                    input_dim,
+                    hidden_dim1,
+                    None,
+                    torch.nn.Sequential(
+                        torch.nn.ReLU(), torch.nn.Dropout(p=dropout_prob)
+                    ),
+                ),
+                (
+                    hidden_dim1,
+                    output_dim,
+                    None,
+                    torch.nn.Softmax(dim=1),
+                ),
+            ]
+        )

@@ -9,12 +9,12 @@ declare -A BACKBONESCRIPTS
 declare -A BACKBONEPARAMS
 
 # BACKBONE SCRIPT
-BACKBONESCRIPTS["tnc"]="my_tnc.py"
+BACKBONESCRIPTS["tnc"]="tnc.py"
 BACKBONEPARAMS["tnc"]="--mc_sample_size 20 --window_size 60 --encoding_size 10 --w 0.05 --num_classes 6"
 
 # Run the script
 
-# Iterate over all experiments and call the train_and_test.sh script
+# Iterate over all experiments and call the train_backbones.sh script
 # for each experiment and each dataset
 for experiment_name in "${!BACKBONESCRIPTS[@]}"; do
     script=${BACKBONESCRIPTS[$experiment_name]}
