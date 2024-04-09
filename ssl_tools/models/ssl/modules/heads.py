@@ -86,3 +86,6 @@ class TNCPredictionHead(ProjectionHead):
 
 class CPCPredictionHead(TNCPredictionHead):
     pass
+
+class ConvAEPredictionHead(TNCPredictionHead):
+    pass

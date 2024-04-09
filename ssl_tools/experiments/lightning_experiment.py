@@ -186,7 +186,7 @@ class LightningExperiment(Experiment):
         4. Instantiates the trainer
         5. Trains/Tests the model
         """
-
+        print(f"Running experiment, lightning_experiment.py run...")
         # ----------------------------------------------------------------------
         # 1. Instantiate model and data module
         # ----------------------------------------------------------------------
