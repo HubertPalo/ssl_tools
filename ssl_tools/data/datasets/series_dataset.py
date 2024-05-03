@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import contextlib
 from imblearn.over_sampling import SMOTE
+import random
 
 
 class MultiModalSeriesCSVDataset:
@@ -189,6 +190,218 @@ class MultiModalSeriesCSVDataset:
     def __repr__(self) -> str:
         return str(self)
 
+
+class MultiModalSeriesCSVDatasetForBarlowTwins:
+    def __init__(
+        self,
+        data_path: Union[Path, str],
+        feature_prefixes: Union[str, List[str]] = None,
+        label: str = None,
+        features_as_channels: bool = True,
+        cast_to: str = "float32",
+        transforms: Optional[Union[Callable, List[Callable]]] = None,
+    ):
+        """This datasets assumes that the data is in a single CSV file with
+        series of data. Each row is a single sample that can be composed of
+        multiple modalities (series). Each column is a feature of some series
+        with the prefix indicating the series. The suffix may indicates the
+        time step. For instance, if we have two series, accel-x and accel-y,
+        the data will look something like:
+
+        +-----------+-----------+-----------+-----------+--------+
+        | accel-x-0 | accel-x-1 | accel-y-0 | accel-y-1 |  class |
+        +-----------+-----------+-----------+-----------+--------+
+        | 0.502123  | 0.02123   | 0.502123  | 0.502123  |  0     |
+        | 0.6820123 | 0.02123   | 0.502123  | 0.502123  |  1     |
+        | 0.498217  | 0.00001   | 1.414141  | 3.141592  |  2     |
+        +-----------+-----------+-----------+-----------+--------+
+
+        The ``feature_prefixes`` parameter is used to select the columns that
+        will be used as features. For instance, if we want to use only the
+        accel-x series, we can set ``feature_prefixes=["accel-x"]``. If we want
+        to use both accel-x and accel-y, we can set
+        ``feature_prefixes=["accel-x", "accel-y"]``. If None is passed, all
+        columns will be used as features, except the label column.
+        The label column is specified by the ``label`` parameter.
+
+        The dataset will return a 2-element tuple with the data and the label,
+        if the ``label`` parameter is specified, otherwise return only the data.
+
+        If ``features_as_channels`` is ``True``, the data will be returned as a
+        vector of shape `(C, T)`, where C is the number of channels (features)
+        and `T` is the number of time steps. Else, the data will be returned as
+        a vector of shape  T*C (a single vector with all the features).
+
+        Parameters
+        ----------
+        data_path : Union[Path, str]
+            The location of the CSV file
+        feature_prefixes : Union[str, List[str]], optional
+            The prefix of the column names in the dataframe that will be used
+            to become features. If None, all columns except the label will be
+            used as features.
+        label : str, optional
+            The name of the column that will be used as label
+        features_as_channels : bool, optional
+            If True, the data will be returned as a vector of shape (C, T),
+            else the data will be returned as a vector of shape  T*C.
+        cast_to: str, optional
+            Cast the numpy data to the specified type
+        transforms: Optional[List[Callable]], optional
+            A list of transforms that will be applied to each sample
+            individually. Each transform must be a callable that receives a
+            numpy array and returns a numpy array. The transforms will be
+            applied in the order they are specified.
+
+        Examples
+        --------
+        # Using the data from the example above, and features_as_channels=False
+        >>> data_path = "data.csv"
+        >>> dataset = MultiModalSeriesCSVDataset(
+                data_path,
+                feature_prefixes=["accel-x", "accel-y"],
+                label="class"
+            )
+        >>> data, label = dataset[0]
+        >>> data.shape
+        (4, )
+
+        # Using the data from the example above, and features_as_channels=True
+        >>> dataset = MultiModalSeriesCSVDataset(
+                data_path,
+                feature_prefixes=["accel-x", "accel-y"],
+                label="class",
+                features_as_channels=True
+            )
+        >>> data, label = dataset[0]
+        >>> data.shape
+        (2, 2)
+
+        # And the dataset length
+        >>> len(dataset)
+        3
+
+        """
+        self.data_path = Path(data_path)
+
+        if feature_prefixes is not None:
+            if not isinstance(feature_prefixes, Iterable):
+                feature_prefixes = [feature_prefixes]
+        self.feature_prefixes = feature_prefixes
+        self.label = label
+        self.cast_to = cast_to
+        self.features_as_channels = features_as_channels
+        if transforms is not None:
+            if not isinstance(transforms, list):
+                transforms = [transforms]
+        else:
+            transforms = []
+        self.transforms = transforms
+        self.data, self.labels = self._load_data()
+
+    def _load_data(self) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """Load data from the CSV file
+
+        Returns
+        -------
+        Tuple[np.ndarray, Optional[np.ndarray]]
+            A 2-element tuple with the data and the labels. The second element
+            is None if the label is not specified.
+        """
+        df = pd.read_csv(self.data_path)
+
+        # Select columns with the given prefixes
+        # If None, select all columns except the label (if specified)
+        if self.feature_prefixes is None:
+            selected_columns = [col for col in df.columns if col != self.label]
+        else:
+            selected_columns = [
+                col
+                for col in df.columns
+                if any(prefix in col for prefix in self.feature_prefixes)
+            ]
+
+        selected_columns = list(selected_columns)
+
+        # Select the data from the selected columns
+        data = df[selected_columns].to_numpy()
+
+        # If features_as_channels is True, reshape the data to (N, C, T) where
+        # N is the number of samples, C is the number of channels and T is the
+        # number of time steps
+        if self.features_as_channels:
+            data = data.reshape(
+                -1,
+                len(self.feature_prefixes),
+                data.shape[1] // len(self.feature_prefixes),
+            )
+
+        # Cast the data to the specified type
+        if self.cast_to:
+            data = data.astype(self.cast_to)
+
+        # If label is specified, return the data and the labels
+        if self.label:
+            labels = df[self.label].to_numpy()
+            return data, labels
+        # If label is not specified, return only the data
+        else:
+            return data, None
+
+    def __len__(self) -> int:
+        return len(self.data)
+    
+    def __replicate_last(self, sample):
+        sample2 = np.copy(sample)
+        sample2[:-1] = sample[1:]
+        sample2[-1] = sample[-1]
+        return sample2
+    
+    def __replicate_first(self, sample):
+        sample2 = np.copy(sample)
+        sample2[1:] = sample[:-1]
+        # sample2[0] = sample[0]
+        return sample2
+    
+    def __change_axis(self, sample):
+        sample2 = np.copy(sample)
+        # Choose a random axis to change
+        axis = random.randint(0, 5)
+        # If it is an axis from 0-2, exchange it with another axis from 0-2
+        if axis < 3:
+            new_axis = random.randint(0, 2)
+        # If it is an axis from 3-5, exchange it with another axis from 3-5
+        else:
+            new_axis = random.randint(3, 5)
+        sample2[axis] = sample[new_axis]
+        sample2[new_axis] = sample[axis]
+        return sample2
+    
+    def __getitem__(
+        self, index: int
+    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
+        # Get data and apply transforms
+        data = self.data[index]
+        for transform in self.transforms:
+            data = transform(data)
+
+        # Randomly choose whether to replicate the first or the last sample or change an axis
+        options = [self.__replicate_last, self.__replicate_first, self.__change_axis]
+        option = random.choice(options)
+        data_extra = option(data)
+        data = (data, data_extra)
+
+        # Return data and label if specified, else return only the data
+        if self.label:
+            return data, self.labels[index]
+        else:
+            return data
+
+    def __str__(self) -> str:
+        return f"MultiModalSeriesCSVDataset at {self.data_path} ({len(self)} samples)"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 class SeriesFolderCSVDataset:
     def __init__(

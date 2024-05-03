@@ -2,7 +2,8 @@ from .har import (
     MultiModalHARSeriesDataModule,
     UserActivityFolderDataModule,
     TNCHARDataModule,
-    TFCDataModule
+    TFCDataModule,
+    MultiModalHARSeriesDataModuleForBarlowTwins,
 )
 
 from .covid_anomaly import CovidUserAnomalyDataModule

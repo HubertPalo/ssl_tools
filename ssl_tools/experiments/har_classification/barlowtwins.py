@@ -11,35 +11,29 @@ from torchmetrics import Accuracy
 from ssl_tools.models.ssl.classifier import SSLDiscriminator
 from ssl_tools.models.ssl.modules.heads import TFCPredictionHead, ConvAEPredictionHead
 from ssl_tools.models.ssl.tfc import build_tfc_transformer
-from ssl_tools.models.ssl.convae import ConvAE
-from ssl_tools.data.data_modules import TFCDataModule, UserActivityFolderDataModule, MultiModalHARSeriesDataModule
-import torch.nn as nn
+from ssl_tools.models.ssl.barlowtwins import BarlowTwins
+from ssl_tools.data.data_modules import TFCDataModule, UserActivityFolderDataModule, MultiModalHARSeriesDataModule, MultiModalHARSeriesDataModuleForBarlowTwins
 
-class View(nn.Module):
-    def __init__(self, shape):
-        super().__init__()
-        self.shape = shape
-    def forward(self, x):
-        return x.view(*self.shape)
 
-class ConvAETrain(LightningSSLTrain):
-    _MODEL_NAME = "ConvAE"
+class BarlowTwinsTrain(LightningSSLTrain):
+    _MODEL_NAME = "BarlowTwins"
     
     def __init__(
             self,
             data: str,
             encoding_size: int = 150,
             in_channel: int = 6,
+            input_size = (6,60),
             # Model parameters
-            conv_num=3, fc_num=2, #enc_size=150,
-            conv_kernel=3, conv_padding=0, conv_stride=1,
-            conv_groups=1, conv_dilation=1,
-            pooling_type='none', pooling_kernel=2, pooling_stride=2,
-            dropout=0.2, input_size=(6,60),
-            pad_length: bool = False,
-            num_classes: int = 6,
+            lambda_=5e-3,
+            proj_head_size=36,
+            proj_head_num=2,
+            conv_kernel=3,
+            conv_padding=1,
+            conv_stride=1,
+            conv_num=5,
+            dropout=0.3,
             update_backbone: bool = True,
-            window_size: int = 60,
             *args,
             **kwargs,
         ):
@@ -47,36 +41,34 @@ class ConvAETrain(LightningSSLTrain):
         self.data = data
         self.encoding_size = encoding_size
         self.in_channel = in_channel
-        self.conv_num = conv_num
-        self.fc_num = fc_num
+        self.input_size = input_size
+        self.lambda_ = lambda_
+        self.proj_head_size = proj_head_size
+        self.proj_head_num = proj_head_num
         self.conv_kernel = conv_kernel
         self.conv_padding = conv_padding
         self.conv_stride = conv_stride
-        self.conv_groups = conv_groups
-        self.conv_dilation = conv_dilation
-        self.pooling_type = pooling_type
-        self.pooling_kernel = pooling_kernel
-        self.pooling_stride = pooling_stride
+        self.conv_num = conv_num
         self.dropout = dropout
-        self.input_size = input_size
-        self.num_classes = num_classes
         self.update_backbone = update_backbone
-        self.pad_length = pad_length
-        self.window_size = window_size
-        
+
     def get_pretrain_model(self) -> L.LightningModule:
-        model = ConvAE(
-            conv_num=self.conv_num, fc_num=self.fc_num, enc_size=self.encoding_size,
-            conv_kernel=self.conv_kernel, conv_padding=self.conv_padding, conv_stride=self.conv_stride,
-            conv_groups=self.conv_groups, conv_dilation=self.conv_dilation,
-            pooling_type=self.pooling_type, pooling_kernel=self.pooling_kernel, pooling_stride=self.pooling_stride,
-            dropout=self.dropout, input_size=self.input_size,
-            # lr=self.learning_rate, weight_decay=self.weight_decay,
+        model = BarlowTwins(
+            encoding_size=self.encoding_size,
+            lambda_=self.lambda_,
+            proj_head_size=self.proj_head_size,
+            proj_head_num=self.proj_head_num,
+            conv_kernel=self.conv_kernel,
+            conv_padding=self.conv_padding,
+            conv_stride=self.conv_stride,
+            conv_num=self.conv_num,
+            dropout=self.dropout,
         )
+        print("Model:::::::::", model)
         return model
     
     def get_pretrain_data_module(self) -> L.LightningDataModule:
-        data_module = MultiModalHARSeriesDataModule(
+        data_module = MultiModalHARSeriesDataModuleForBarlowTwins(
             data_path=self.data,
             batch_size=self.batch_size,
             label="standard activity code",
@@ -126,7 +118,7 @@ class ConvAETrain(LightningSSLTrain):
     
 if __name__ == "__main__":
     options = {
-        "fit": ConvAETrain,
+        "fit": BarlowTwinsTrain,
         # "test": CPCTest,
     }
     auto_main(options)
